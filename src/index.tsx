@@ -1,6 +1,11 @@
 import * as React from 'react'
 import CommentSectionComponent from './components/CommentSectionComponent/Index'
-import GlobalProvider, { MentionsObject } from './context/Provider'
+import GlobalProvider, {
+  DEFAULT_MENTION_TRIGGERS,
+  MentionsObject,
+  OnHashMentionSearch,
+  OnMentionSearch
+} from './context/Provider'
 import './Index.scss'
 import { EditorState } from 'draft-js'
 
@@ -35,6 +40,8 @@ interface CommentSectionProps {
   currentData?: Function
   removeEmoji?: boolean
   advancedInput?: boolean
+  /** Overrides default Draft.js placeholder when `advancedInput` is true. */
+  advancedInputPlaceholder?: string
   commentData: Array<{
     userId: string
     comId: string
@@ -56,12 +63,17 @@ interface CommentSectionProps {
       | undefined
   }>
   mentionSuggestions?: MentionsObject
+  /** Mention prefix characters for both advanced and default inputs. Defaults to `['@', '#']`. */
+  mentionTriggers?: string[]
+  onMentionSearch?: OnMentionSearch
+  /** @deprecated Use `onMentionSearch` instead. */
+  onHashMentionSearch?: OnHashMentionSearch
   hideToolbar?: boolean
   isEditable?: boolean
   isAbleToDelete?: boolean
   showActionMenu?: boolean
   isAbleToReply?: boolean
-  isAuthenticated?: boolean 
+  isAuthenticated?: boolean
 }
 
 export const CommentSection = ({
@@ -88,7 +100,11 @@ export const CommentSection = ({
   customNoComment,
   currentData,
   advancedInput,
+  advancedInputPlaceholder,
   mentionSuggestions,
+  mentionTriggers,
+  onMentionSearch,
+  onHashMentionSearch,
   hideToolbar,
   isEditable,
   isAbleToDelete,
@@ -116,8 +132,12 @@ export const CommentSection = ({
       currentData={currentData}
       removeEmoji={removeEmoji}
       advancedInput={advancedInput}
+      advancedInputPlaceholder={advancedInputPlaceholder}
       mentionSuggestions={mentionSuggestions}
-      hideToolbar={hideToolbar} 
+      mentionTriggers={mentionTriggers}
+      onMentionSearch={onMentionSearch}
+      onHashMentionSearch={onHashMentionSearch}
+      hideToolbar={hideToolbar}
       isEditable={isEditable}
       isAbleToDelete={isAbleToDelete}
       isAbleToReply={isAbleToReply}
@@ -134,3 +154,7 @@ export const CommentSection = ({
     </GlobalProvider>
   )
 }
+
+export type { MentionsObject, OnMentionSearch, OnHashMentionSearch }
+export { DEFAULT_MENTION_TRIGGERS }
+export { triggerFromMentionEntityType } from './components/CommentStructure.tsx/Index'

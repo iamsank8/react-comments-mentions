@@ -190,6 +190,23 @@ const CommentStructure = ({
   )
 }
 
+/** Derives the trigger character(s) from @draft-js-plugins/mention entity type (`mention` → `@`, `#mention` → `#`). */
+export function triggerFromMentionEntityType(
+  entityType: string | undefined
+): string {
+  if (!entityType) {
+    return '@';
+  }
+  if (entityType === 'mention') {
+    return '@';
+  }
+  const suffix = 'mention';
+  if (entityType.endsWith(suffix) && entityType.length > suffix.length) {
+    return entityType.slice(0, -suffix.length);
+  }
+  return '@';
+}
+
 export const convertJsonToHtml = (json: any) => {
   const { blocks, entityMap } = json;
   let html = "";
@@ -207,8 +224,9 @@ export const convertJsonToHtml = (json: any) => {
       // Add text before the mention
       blockText += block.text.substring(lastIndex, offset);
 
-      // Add the mention HTML based on its type
-      const mentionSymbol = entity?.type === 'mention' ? '@' : '#';
+      const mentionSymbol =
+        entity.data?.mention?.trigger ??
+        triggerFromMentionEntityType(entity?.type);
       const mentionHtml = link
         ? `<a href="${link}" target="_blank" rel="noopener noreferrer"><strong>${mentionSymbol}${name}</strong></a>`
         : `<a href="#" onclick="event.preventDefault();"><strong>${mentionSymbol}${name}</strong></a>`;

@@ -5,10 +5,19 @@ import { MentionData } from '@draft-js-plugins/mention';
 import { EditorState } from 'draft-js';
 
 export const GlobalContext = createContext({})
-export interface MentionsObject {
-  "@": MentionData[];
-  "#": MentionData[];
-}
+
+export const DEFAULT_MENTION_TRIGGERS: string[] = ['@', '#']
+
+/** Async lookup for any mention trigger; use with `mentionSuggestions[trigger]` for empty-query preload. */
+export type OnMentionSearch = (
+  trigger: string,
+  query: string
+) => Promise<MentionData[]>
+
+/** @deprecated Use {@link OnMentionSearch} with `onMentionSearch`; for `#` only, still supported. */
+export type OnHashMentionSearch = (query: string) => Promise<MentionData[]>
+
+export type MentionsObject = Record<string, MentionData[]>
 export const GlobalProvider = ({
   children,
   currentUser,
@@ -29,7 +38,11 @@ export const GlobalProvider = ({
   replyInputStyle,
   removeEmoji,
   advancedInput,
+  advancedInputPlaceholder,
   mentionSuggestions,
+  mentionTriggers = DEFAULT_MENTION_TRIGGERS,
+  onMentionSearch,
+  onHashMentionSearch,
   hideToolbar,
   isAbleToDelete = true,
   isEditable = true,
@@ -80,7 +93,17 @@ export const GlobalProvider = ({
   onEditAction?: Function
   currentData?: Function
   advancedInput?: boolean
+  /** Overrides default Draft.js mention hint when `advancedInput` is true. */
+  advancedInputPlaceholder?: string
   mentionSuggestions?: MentionsObject
+  /** Triggers that open the mention suggestion list (Draft.js advanced input). Defaults to `['@', '#']`. */
+  mentionTriggers?: string[]
+  /** Server or async suggestions; non-empty `query` uses this when provided. Empty query uses `mentionSuggestions[trigger]`. */
+  onMentionSearch?: OnMentionSearch
+  /**
+   * @deprecated Prefer `onMentionSearch`. When set and `onMentionSearch` is not, used only for trigger `#`.
+   */
+  onHashMentionSearch?: OnHashMentionSearch
   hideToolbar?: boolean
   isEditable?: boolean
   isAbleToDelete?: boolean
@@ -231,6 +254,9 @@ export const GlobalProvider = ({
     }
   }
 
+  const resolvedMentionTriggers =
+    mentionTriggers.length > 0 ? mentionTriggers : DEFAULT_MENTION_TRIGGERS
+
   const onDelete = (comId: string, parentId: string) => {
     let copyData = [...data]
     if (parentId) {
@@ -274,7 +300,11 @@ export const GlobalProvider = ({
         replyInputStyle: replyInputStyle,
         removeEmoji: removeEmoji,
         advancedInput: advancedInput,
+        advancedInputPlaceholder: advancedInputPlaceholder,
         mentionSuggestions: mentionSuggestions,
+        mentionTriggers: resolvedMentionTriggers,
+        onMentionSearch: onMentionSearch,
+        onHashMentionSearch: onHashMentionSearch,
         hideToolbar: hideToolbar,
         isEditable: isEditable,
         isAbleToDelete: isAbleToDelete,

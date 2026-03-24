@@ -1,9 +1,20 @@
-import React, { useState, useRef, useCallback, useEffect, useContext } from 'react';
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useContext,
+  useMemo,
+} from 'react';
 import { EditorState, convertToRaw } from 'draft-js';
 import Editor from '@draft-js-plugins/editor';
 import createMentionPlugin, { MentionData } from '@draft-js-plugins/mention';
-import { GlobalContext } from '../../context/Provider';
+import {
+  GlobalContext,
+  DEFAULT_MENTION_TRIGGERS,
+} from '../../context/Provider';
 import { SubMentionComponentProps } from '@draft-js-plugins/mention/lib/Mention';
+
 interface AdvancedInputProps {
   formStyle?: object;
   handleSubmit: (event: React.FormEvent, content: string, editorText: EditorState) => void;
@@ -20,12 +31,12 @@ interface AdvancedInputProps {
 
 const MentionComponent = (props: SubMentionComponentProps) => {
   const { children, mention } = props;
-  const link = mention?.link || "#";
+  const link = mention?.link || '#';
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     e.preventDefault();
-    if (link !== "#") {
-      window.open(link, "_blank", "noopener,noreferrer");
+    if (link !== '#') {
+      window.open(link, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -33,22 +44,24 @@ const MentionComponent = (props: SubMentionComponentProps) => {
     <a
       href="#"
       onClick={handleClick}
-      style={{ textDecoration: "underline", color: "blue", cursor: "pointer" }}
+      style={{ textDecoration: 'underline', color: 'blue', cursor: 'pointer' }}
     >
       {children}
     </a>
   );
 };
 
-const mentionPlugin = createMentionPlugin({
-  mentionTrigger: ['@', '#'],
-  mentionPrefix: (trigger) => trigger,
-  supportWhitespace: true,
-  mentionComponent: MentionComponent,
-});
-
-const { MentionSuggestions } = mentionPlugin;
-const plugins = [mentionPlugin];
+function defaultMentionPlaceholder(triggers: string[]): string {
+  if (triggers.length === 0) {
+    return 'Add a comment...';
+  }
+  const parts = triggers.map((t) => `'${t}'`);
+  if (parts.length === 1) {
+    return `Add a comment or use ${parts[0]} to mention...`;
+  }
+  const last = parts.pop()!;
+  return `Add a comment or use ${parts.join(', ')} or ${last} to mention...`;
+}
 
 const AdvancedInput = ({
   formStyle,
@@ -63,14 +76,35 @@ const AdvancedInput = ({
   editorText
 }: AdvancedInputProps) => {
   const globalStore: any = useContext(GlobalContext);
+  const mentionTriggers: string[] =
+    globalStore.mentionTriggers ?? DEFAULT_MENTION_TRIGGERS;
+  const triggersKey = JSON.stringify(mentionTriggers);
+
+  const { plugins, MentionSuggestions } = useMemo(() => {
+    const mentionPlugin = createMentionPlugin({
+      mentionTrigger: mentionTriggers,
+      mentionPrefix: (trigger: string) => trigger,
+      supportWhitespace: true,
+      mentionComponent: MentionComponent,
+    });
+    return {
+      plugins: [mentionPlugin],
+      MentionSuggestions: mentionPlugin.MentionSuggestions,
+    };
+  }, [triggersKey]);
+
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [open, setOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<MentionData[]>(globalStore.mentionSuggestions || []);
+  const [suggestions, setSuggestions] = useState<MentionData[]>([]);
   const editorRef = useRef<Editor>(null);
+  const lastMentionQueryRef = useRef<{ trigger: string; value: string }>({
+    trigger: '',
+    value: '',
+  });
 
   useEffect(() => {
     if (editorText && editorText instanceof EditorState) {
-      setEditorState(editorText)
+      setEditorState(editorText);
     } else {
       setEditorState(EditorState.createEmpty());
     }
@@ -85,19 +119,65 @@ const AdvancedInput = ({
   }, []);
 
   const onSearchChange = useCallback(
-    ({ trigger, value }: { trigger: string; value: string }) => {
-      const filteredSuggestions = globalStore.mentionSuggestions[trigger as '@' | '#'].filter((mention: any) =>
-        mention.name.toLowerCase().includes(value.toLowerCase())
+    async ({ trigger, value }: { trigger: string; value: string }) => {
+      lastMentionQueryRef.current = { trigger, value };
+      const list = globalStore.mentionSuggestions?.[trigger] ?? [];
+
+      if (globalStore.onMentionSearch) {
+        if (value.trim().length === 0) {
+          setSuggestions(list);
+          return;
+        }
+        try {
+          const results = await globalStore.onMentionSearch(trigger, value);
+          setSuggestions(results);
+        } catch {
+          setSuggestions([]);
+        }
+        return;
+      }
+
+      if (trigger === '#' && globalStore.onHashMentionSearch) {
+        if (value.trim().length === 0) {
+          setSuggestions(list);
+          return;
+        }
+        try {
+          const results = await globalStore.onHashMentionSearch(value);
+          setSuggestions(results);
+        } catch {
+          setSuggestions([]);
+        }
+        return;
+      }
+
+      const filteredSuggestions = list.filter((mention: MentionData) =>
+        mention.name.toLowerCase().includes(value.toLowerCase()),
       );
-  
-      setSuggestions(filteredSuggestions as MentionData[]);
+      setSuggestions(filteredSuggestions);
     },
-    [globalStore]
+    [globalStore],
   );
+
+  const mentionSuggestions = globalStore.mentionSuggestions;
+
+  useEffect(() => {
+    const { trigger, value } = lastMentionQueryRef.current;
+    if (value.trim() !== '') {
+      return;
+    }
+    const useAsync =
+      globalStore.onMentionSearch ||
+      (trigger === '#' && globalStore.onHashMentionSearch);
+    if (!useAsync) {
+      return;
+    }
+    setSuggestions(mentionSuggestions?.[trigger] ?? []);
+  }, [mentionSuggestions, globalStore.onMentionSearch, globalStore.onHashMentionSearch]);
 
   const handleSubmitWrapper = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(editorState){
+    if (editorState) {
       const contentState = editorState.getCurrentContent();
       const rawContentState = convertToRaw(contentState);
       if (rawContentState) {
@@ -106,6 +186,12 @@ const AdvancedInput = ({
       }
     }
   };
+
+  const placeholder =
+    globalStore.advancedInputPlaceholder ??
+    (globalStore.isAuthenticated
+      ? defaultMentionPlaceholder(mentionTriggers)
+      : 'Start typing a comment...');
 
   return (
     <div className='advanced-overlay'>
@@ -125,7 +211,8 @@ const AdvancedInput = ({
           style={globalStore.formStyle || formStyle}
           onSubmit={handleSubmitWrapper}
         >
-          <div className="editor" 
+          <div
+            className="editor"
             onClick={() => {
               editorRef.current?.focus();
             }}
@@ -135,7 +222,7 @@ const AdvancedInput = ({
               onChange={onChange}
               plugins={plugins}
               ref={editorRef}
-              placeholder={globalStore.isAuthenticated ? "Add a comment or use '@' to mention users or '#' for assets" : "Start typing a comment..."}
+              placeholder={placeholder}
             />
             <MentionSuggestions
               open={open}
@@ -149,7 +236,7 @@ const AdvancedInput = ({
               <button
                 className='advanced-cancel cancelBtn'
                 style={globalStore.cancelBtnStyle || cancelBtnStyle}
-                type='button'
+                type="button"
                 onClick={() =>
                   mode === 'editMode'
                     ? globalStore.handleAction(comId, true)
@@ -161,7 +248,7 @@ const AdvancedInput = ({
             )}
             <button
               className='advanced-post postBtn'
-              type='submit'
+              type="submit"
               disabled={!editorState || !(editorState instanceof EditorState) || !editorState.getCurrentContent().hasText()}
               style={globalStore.submitBtnStyle || submitBtnStyle}
             >
@@ -171,7 +258,7 @@ const AdvancedInput = ({
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default AdvancedInput;

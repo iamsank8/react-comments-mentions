@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { MentionsInput, Mention } from 'react-mentions';
-import { GlobalContext } from '../../context/Provider';
+import { GlobalContext, DEFAULT_MENTION_TRIGGERS } from '../../context/Provider';
 import { defaultMentionInputsStyle, defaultMentionStyle } from './defaultMentionStyle';
 
 interface MentionsComponentProps {
@@ -19,6 +19,9 @@ const MentionsComponent: React.FC<MentionsComponentProps> = ({
   placeholder = "Type your reply here",
 }) => {
   const globalStore: any = useContext(GlobalContext)
+  const mentionTriggers: string[] =
+    globalStore.mentionTriggers ?? DEFAULT_MENTION_TRIGGERS
+
   return (
     <MentionsInput
       value={text}
@@ -33,19 +36,22 @@ const MentionsComponent: React.FC<MentionsComponentProps> = ({
       placeholder={placeholder}
       a11ySuggestionsListLabel='Suggested mentions'
     >
-      <Mention
-        markup="@[__display__]"
-        displayTransform={(_id, display) => display}
-        trigger='@'
-        data={globalStore.mentionSuggestions}
-        style={defaultMentionStyle}
-        renderSuggestion={(
-          _suggestion,
-          _search,
-          highlightedDisplay
-        ) => <div>{highlightedDisplay}</div>}
-        appendSpaceOnAdd
-      />
+      {mentionTriggers.map((t) => (
+        <Mention
+          key={t}
+          markup={`${t}[__display__]`}
+          displayTransform={(_id, display) => display}
+          trigger={t}
+          data={globalStore.mentionSuggestions?.[t] ?? []}
+          style={defaultMentionStyle}
+          renderSuggestion={(
+            _suggestion,
+            _search,
+            highlightedDisplay
+          ) => <div>{highlightedDisplay}</div>}
+          appendSpaceOnAdd
+        />
+      ))}
     </MentionsInput>
   );
 };
