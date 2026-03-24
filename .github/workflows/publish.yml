@@ -18,7 +18,10 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - run: corepack enable && yarn install --frozen-lockfile
+      - name: Install Yarn classic
+        run: npm install -g yarn@1.22.22
+
+      - run: yarn install --frozen-lockfile
 
       - run: yarn build
 
