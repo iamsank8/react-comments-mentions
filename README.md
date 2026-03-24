@@ -1,11 +1,13 @@
-# @iamsank8/react-comments-mentions
+# react-comments-mentions-iamsank8
 
 Fork maintained at [github.com/iamsank8/react-comments-mentions](https://github.com/iamsank8/react-comments-mentions). Node v16+ recommended.
+
+Published as an unscoped name so you can publish with any npm account. Scoped names like `@iamsank8/...` only work when your **npm** username matches the scope (GitHub username does not apply).
 
 ## Install
 
 ```bash
-npm i @iamsank8/react-comments-mentions
+npm i react-comments-mentions-iamsank8
 ```
 
 Based off the below package BUT adds gives the ability to add a timestamp to each comment!
