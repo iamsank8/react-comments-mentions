@@ -1,12 +1,15 @@
 {
-  "name": "react-comments-mentions",
-  "version": "2.0.1",
+  "name": "@iamsank8/react-comments-mentions",
+  "version": "2.0.2",
   "description": "React component library for a functioning comments and user mentions",
-  "author": "Akash Lakade",
+  "author": "Sanket Thotange",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AkashLakade/react-comments-mentions.git"
+    "url": "git+https://github.com/iamsank8/react-comments-mentions.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "main": "dist/index.js",
   "style": "dist/styles.css",
@@ -46,6 +49,7 @@
     "@types/react-draft-wysiwyg": "^1.13.8",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
+    "autoprefixer": "10",
     "cross-env": "^7.0.3",
     "eslint": "^8.50.0",
     "eslint-config-prettier": "^9.0.0",
@@ -59,6 +63,7 @@
     "eslint-plugin-standard": "^4.1.0",
     "gh-pages": "^6.0.0",
     "npm-run-all": "^4.1.5",
+    "postcss": "8",
     "prettier": "^3.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -90,9 +95,9 @@
   },
   "types": "./dist/index.d.ts",
   "bugs": {
-    "url": "https://github.com/charlesmack34/react-comments-section/issues"
+    "url": "https://github.com/iamsank8/react-comments-mentions/issues"
   },
-  "homepage": "https://github.com/charlesmack34/react-comments-section#readme",
+  "homepage": "https://github.com/iamsank8/react-comments-mentions#readme",
   "directories": {
     "example": "example"
   },
@@ -100,5 +105,8 @@
     "microbundle-crl-postcss8": {
       "nth-check": "2.0.1"
     }
+  },
+  "resolutions": {
+    "postcss": "^8.4.31"
   }
 }

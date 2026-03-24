@@ -1,9 +1,11 @@
-# react-comments-mentions
-Node v - 16
+# @iamsank8/react-comments-mentions
+
+Fork maintained at [github.com/iamsank8/react-comments-mentions](https://github.com/iamsank8/react-comments-mentions). Node v16+ recommended.
+
 ## Install
-Install the latest version!
+
 ```bash
-npm i react-comments-mentions
+npm i @iamsank8/react-comments-mentions
 ```
 
 Based off the below package BUT adds gives the ability to add a timestamp to each comment!
@@ -33,4 +35,4 @@ This is how the basic default component would look.
 
 ## License
 
-MIT © [AkashLakade](https://github.com/AkashLakade)
+MIT. This project is a fork of work by [AkashLakade](https://github.com/AkashLakade); see [LICENSE](LICENSE) for full copyright notices.
